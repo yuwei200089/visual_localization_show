@@ -19,6 +19,7 @@ class FileAnalyze():
         if len(load_file_path) == 0 : return
         self.count = [0]*len(load_file_path)
         self.location_count = [0]*len(load_file_path)
+        self.location_percent = [0]*len(load_file_path)
         self.content = None
         # 不能寫 "[[]]*變數" 因為這樣會讓裡面的子list都指向同一個位址，導致在進行內容修改或append的時候會連同其他子list也一起修改
         self.data_event = [[[] for _ in range(len(map_node_range))] for _ in range(len(load_file_path))] 
@@ -32,8 +33,9 @@ class FileAnalyze():
                         if self.content == '': break
                         # print(self.content.strip('\n'))
                         self.DataAnalyze(index)
-                
-            return self.count, self.location_count, self.data_event
+                self.location_percent[index] = Decimal(str(self.location_count[index] / self.count[index] * 100)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+            return self.count, self.location_count, self.location_percent, self.data_event
         except:
             pass
 
@@ -87,19 +89,20 @@ class DrawPicture():
         # print(color_swich)
         self.DrawEvent(data_event, i, multi_file, color_swich=color_swich)
         if multi_file:
+            highlight = 'bold' if percent == max_location_percent else 'normal'
             self.ax[i].axis('off')
             pos = self.ax[i].get_position()
             self.ax[i].set_position([pos.bounds[0]+0.0, pos.bounds[1], pos.bounds[2], pos.bounds[3]])
-            self.ax[i].text(-0.08, 0.49, s, fontsize=19, verticalalignment='center', horizontalalignment='center', transform=self.ax[i].transAxes)
-            self.ax[i].text(1.02, 0.49, f'{percent} %', fontsize=19, verticalalignment='center', horizontalalignment='center', transform=self.ax[i].transAxes)
+            self.ax[i].text(-0.03, 0.49, s, fontsize=19, verticalalignment='center', horizontalalignment='center', transform=self.ax[i].transAxes, fontname='Times New Roman', fontweight=highlight)
+            self.ax[i].text(1.02, 0.49, f'{percent} %', fontsize=19, verticalalignment='center', horizontalalignment='center', transform=self.ax[i].transAxes, fontname='Times New Roman', fontweight=highlight)
         else:
             self.ax.yaxis.set_major_locator(plt.MultipleLocator(2))
             plt.ylim(-2, 2)
             self.ax.axis('off')
             pos = self.ax.get_position()
             self.ax.set_position([pos.bounds[0]+0.0, pos.bounds[1], pos.bounds[2], pos.bounds[3]])
-            self.ax.text(-0.08, 0.49, s, fontsize=19, verticalalignment='center', horizontalalignment='center', transform=self.ax.transAxes)
-            self.ax.text(1.04, 0.49, f'{percent} %', fontsize=19, verticalalignment='center', horizontalalignment='center', transform=self.ax.transAxes)
+            self.ax.text(-0.03, 0.49, s, fontsize=19, verticalalignment='center', horizontalalignment='center', transform=self.ax.transAxes, fontname='Times New Roman')
+            self.ax.text(1.04, 0.49, f'{percent} %', fontsize=19, verticalalignment='center', horizontalalignment='center', transform=self.ax.transAxes, fontname='Times New Roman')
 
 if __name__ == '__main__':
     load_file_path = []
@@ -113,18 +116,20 @@ if __name__ == '__main__':
     data_event_list = [[[]]]
     count = []
     location_count = []
+    location_percent = []
     picture_text = {'gift':'GIFT', 'superpoint':'SuperPoint', 'superglue':'SuperGlue', 'fast':'FAST/BRIEF', 'brisk':'BRISK', 'kaze':'KAZE', 'surf':'SURF'} 
     location_color = {'1+3':["#1f77b4", "#01b07bff"], '2+4':["#fb4a4a", "#ce2dce"], 'all':["#1f77b4", "#fb4a4a", "#01b07bff", "#ce2dce"]}
     # location_color = plt.rcParams['axes.prop_cycle'].by_key()['color']
     strict_all = lambda x: bool(x) and all(x)
     # print(strict_all([1 if path.exists(j) else 0 for j in load_file_path]))
     if strict_all([1 if path.exists(j) else 0 for j in load_file_path]):
-        count, location_count, data_event_list = file.ReadFile(load_file_path)
+        count, location_count, location_percent, data_event_list = file.ReadFile(load_file_path)
+        max_location_percent = max(location_percent)
         for i in range(len(load_file_path)):
-            location_percent = Decimal(str(location_count[i] / count[i] * 100)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-            draw.Show(data_event_list[i], location_percent, i, multi_file = (True if len(load_file_path) > 1 else False))
+            # location_percent = Decimal(str(location_count[i] / count[i] * 100)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            draw.Show(data_event_list[i], location_percent[i], i, multi_file = (True if len(load_file_path) > 1 else False))
             print(count[i], location_count[i])
-            print(location_percent)
+            print(location_percent[i])
         plt.show()
     else :
         print("找不到檔案")
